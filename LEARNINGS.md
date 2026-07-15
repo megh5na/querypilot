@@ -16,3 +16,7 @@
 - used model claude-sonnet-4-6.
 
 ## day 4
+- dedicated read-only postgres role
+- app/core/executor.py -> runs generated sql
+- /ask executes and return rows, with asyncpg.PostgresError at http 400.
+- so now, flow is "question -> sql -> execute -> rows"

@@ -10,5 +10,6 @@ dependencies = [
     "fastapi>=0.137.0",
     "openai>=2.41.1",
     "pydantic-settings>=2.14.1",
+    "sqlglot>=30.12.0",
     "uvicorn[standard]>=0.49.0",
 ]
