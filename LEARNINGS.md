@@ -20,3 +20,8 @@
 - app/core/executor.py -> runs generated sql
 - /ask executes and return rows, with asyncpg.PostgresError at http 400.
 - so now, flow is "question -> sql -> execute -> rows"
+
+## day 5
+- app/core/validator.py uses sqlglot to parse generated sql before it hits the database. checks: parseable, exactly one statement, must be a SELECT. 
+- added AskResponse pydantic model so fastapi validates the response shape too.
+- 3 layer defense for execution: sqlglot validation -> read-only role -> statement timeout.
