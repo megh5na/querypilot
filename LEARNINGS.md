@@ -25,3 +25,11 @@
 - app/core/validator.py uses sqlglot to parse generated sql before it hits the database. checks: parseable, exactly one statement, must be a SELECT. 
 - added AskResponse pydantic model so fastapi validates the response shape too.
 - 3 layer defense for execution: sqlglot validation -> read-only role -> statement timeout.
+
+## day 6
+- added pytest infrastructure: pytest, pytest-asyncio, httpx as dev dependencies
+- tests/conftest.py holds two fixtures: mock_generate_sql and mock_run_query.
+- unit tests (test_validator.py) - no db no nothing.
+- integration tests (test_ask.py) - only the two external dependencies (llm and db) are mocked.
+- production consideration: fast unit tests (no I/O) should be the majority. integration tests are slower and require more setup. keep the ratio high.
+- production consideration: mocks make tests fast and deterministic, but they don't prove the real system works end-to-end. that's what integration/e2e tests with a real db are for, added later.
