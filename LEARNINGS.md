@@ -30,6 +30,10 @@
 - added pytest infrastructure: pytest, pytest-asyncio, httpx as dev dependencies
 - tests/conftest.py holds two fixtures: mock_generate_sql and mock_run_query.
 - unit tests (test_validator.py) - no db no nothing.
-- integration tests (test_ask.py) - only the two external dependencies (llm and db) are mocked.
-- production consideration: fast unit tests (no I/O) should be the majority. integration tests are slower and require more setup. keep the ratio high.
-- production consideration: mocks make tests fast and deterministic, but they don't prove the real system works end-to-end. that's what integration/e2e tests with a real db are for, added later.
+- integration tests (test_ask.py) - only the two external dependencies (llm and db) are mocked
+
+## day 7
+- schema description now cached in-process for 5 minutes.
+- defense layer : validator.py has enforce_row_limit() — injects LIMIT 1001 when the generated sql has none, and rejects (doesn't clamp) an explicit LIMIT above 1000.
+- executor.py raises ResultTooLargeError when that sentinel row comes back
+- added test_executor.py — run_query was previously only exercised through mocks in test_ask.py, so its internals had no real coverage.

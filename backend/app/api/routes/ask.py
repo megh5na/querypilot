@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import asyncpg
-from app.core.executor import run_query, SQLValidationError
+from app.core.executor import run_query, SQLValidationError, ResultTooLargeError
 from app.db.introspect import get_schema_description
 from app.core.llm import generate_sql
 
@@ -28,6 +28,8 @@ async def ask(req: AskRequest) -> AskResponse:
         rows = await run_query(sql) # execute sql
     except SQLValidationError as e:
         raise HTTPException(status_code=422, detail={"sql": sql, "error": str(e)}) # if sql validation error, raise HTTPException
+    except ResultTooLargeError as e:
+        raise HTTPException(status_code=413, detail={"sql": sql, "error": str(e)}) # if result exceeds row cap, raise HTTPException
     except asyncpg.PostgresError as e:
         raise HTTPException(status_code=400, detail={"sql": sql, "error": str(e)}) # if postgres error, raise HTTPException
 

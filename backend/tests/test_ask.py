@@ -2,6 +2,7 @@
 
 import asyncpg
 
+from app.core.executor import ResultTooLargeError
 from app.core.validator import SQLValidationError
 
 
@@ -35,6 +36,18 @@ def test_ask_validation_failure_returns_422(client, mock_generate_sql, mock_run_
     response = client.post("/ask", json={"question": "delete everything"})
 
     assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert "sql" in detail
+    assert "error" in detail
+
+
+def test_ask_result_too_large_returns_413(client, mock_generate_sql, mock_run_query): # 413 — query matched more rows than the cap
+    mock_generate_sql.return_value = 'SELECT * FROM "Track"'
+    mock_run_query.side_effect = ResultTooLargeError("Query matched more than 1000 rows.")
+
+    response = client.post("/ask", json={"question": "list every track"})
+
+    assert response.status_code == 413
     detail = response.json()["detail"]
     assert "sql" in detail
     assert "error" in detail
