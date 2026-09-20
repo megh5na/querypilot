@@ -3,6 +3,7 @@
 import asyncpg
 
 from app.core.executor import ResultTooLargeError
+from app.core.llm import LLMError, LLMConfigError, LLMUnavailableError
 from app.core.validator import SQLValidationError
 
 
@@ -19,12 +20,33 @@ def test_ask_happy_path(client, mock_generate_sql, mock_run_query): # 200 — qu
     assert body["rows"] == [{"count": 347}]
 
 
-def test_ask_llm_failure_returns_502(client, mock_generate_sql, mock_run_query): # 502 — llm error, run_query never called
-    mock_generate_sql.side_effect = ValueError("Model did not return SQL")
+def test_ask_llm_failure_returns_502(client, mock_generate_sql, mock_run_query): # 502 — model didn't return sql, run_query never called
+    mock_generate_sql.side_effect = LLMError("Model did not return SQL")
 
     response = client.post("/ask", json={"question": "anything"})
 
     assert response.status_code == 502
+    assert "error" in response.json()["detail"]
+    mock_run_query.assert_not_called()
+
+
+def test_ask_llm_config_error_returns_500(client, mock_generate_sql, mock_run_query): # 500 — our api key/config is bad, not the caller's fault
+    mock_generate_sql.side_effect = LLMConfigError("Anthropic API credentials rejected")
+
+    response = client.post("/ask", json={"question": "anything"})
+
+    assert response.status_code == 500
+    # the raw anthropic error string should not reach the client
+    assert "credentials" not in response.json()["detail"]["error"]
+    mock_run_query.assert_not_called()
+
+
+def test_ask_llm_unavailable_returns_503(client, mock_generate_sql, mock_run_query): # 503 — anthropic is down/overloaded, retryable
+    mock_generate_sql.side_effect = LLMUnavailableError("Anthropic API temporarily unavailable")
+
+    response = client.post("/ask", json={"question": "anything"})
+
+    assert response.status_code == 503
     assert "error" in response.json()["detail"]
     mock_run_query.assert_not_called()
 

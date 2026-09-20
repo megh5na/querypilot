@@ -37,3 +37,16 @@
 - defense layer : validator.py has enforce_row_limit() — injects LIMIT 1001 when the generated sql has none, and rejects (doesn't clamp) an explicit LIMIT above 1000.
 - executor.py raises ResultTooLargeError when that sentinel row comes back
 - added test_executor.py — run_query was previously only exercised through mocks in test_ask.py, so its internals had no real coverage.
+
+## day 8
+- app/core/logging.py: JSONFormatter writes every log line as one json object (timestamp, level, logger, message + known extra fields), and configure_logging() installs it on the root logger at startup.
+- a request_id contextvar is set once per request in a new middleware in main.py, so every log line touched by that request — main.py, ask.py, wherever — carries the same id without threading it through function signatures.
+- ask.py now logs at each stage: question received, sql generated (+ duration), query executed (+ duration, row count), and a warning/error on each failure branch before it becomes an HTTPException.
+- middleware also logs one "request completed" line per request with method, path, status code, and total duration, and returns the request id as an X-Request-ID response header.
+- added test_logging.py (JSONFormatter in isolation) and test_main.py (the middleware sets a header, different requests get different ids).
+
+## day 9
+- found a real gap while reviewing day 8's logging: ask.py only caught `ValueError`, but anthropic's sdk errors (bad key, rate limit, timeout) don't subclass ValueError — they'd have crashed as raw unhandled 500s.
+- app/core/llm.py now has its own exception hierarchy — LLMError, LLMConfigError (our fault, not transient), LLMUnavailableError (anthropic's side is down, retryable) — and translates anthropic's sdk exceptions into these inside generate_sql, so ask.py never has to know anthropic's exception types exist.
+- ask.py maps them to distinct status codes: 500 for config errors (with a generic client-facing message — the real anthropic error only goes to the log), 503 for unavailable, 502 for everything else.
+- added test_llm.py — generate_sql's exception translation had zero coverage before (same gap test_executor.py fixed for run_query on day 7).
