@@ -21,8 +21,6 @@ async def run_query(sql: str) -> list[dict]:
         rows = await conn.fetch(limited_sql) # execute sql
 
     if len(rows) > MAX_RESULT_ROWS:
-        # only reachable when enforce_row_limit injected the max_rows+1
-        # sentinel and the query actually had more matches than that
         raise ResultTooLargeError(
             f"Query matched more than {MAX_RESULT_ROWS} rows. "
             "Add a LIMIT or narrow the WHERE clause."

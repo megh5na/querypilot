@@ -8,6 +8,7 @@ from anthropic import (
     APIConnectionError,
     AuthenticationError,
     BadRequestError,
+    NotFoundError,
     RateLimitError,
 )
 from unittest.mock import AsyncMock, patch
@@ -68,3 +69,12 @@ async def test_generate_sql_wraps_other_api_errors_as_llm_error():
         mock_create.side_effect = _status_error(BadRequestError, 400)
         with pytest.raises(LLMError):
             await generate_sql("anything", "schema")
+
+async def test_generate_sql_wraps_not_found_as_plain_llm_error():
+    with patch("app.core.llm.client.messages.create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = _status_error(NotFoundError, 404)
+
+        with pytest.raises(LLMError) as error:
+            await generate_sql("anything", "schema")
+
+    assert type(error.value) is LLMError

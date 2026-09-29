@@ -44,25 +44,25 @@ def test_returns_original_sql_unchanged():
     assert validate_sql(sql) is sql
 
 
-# --- enforce_row_limit -------------------------------------------------
+# row limit
 
-def test_injects_limit_when_absent(): # no LIMIT clause -> max_rows + 1 sentinel is added
+def test_injects_limit_when_absent(): # no limit clause -> max_rows + 1 sentinel is added
     sql = 'SELECT "Title" FROM "Album"'
     result = enforce_row_limit(sql, max_rows=10)
     assert "LIMIT 11" in result
 
 
-def test_leaves_limit_under_cap_untouched(): # explicit LIMIT below the cap is left alone
+def test_leaves_limit_under_cap_untouched(): # explicit limit below the cap is left alone
     sql = 'SELECT "Title" FROM "Album" LIMIT 5'
     assert enforce_row_limit(sql, max_rows=10) == sql
 
 
-def test_leaves_limit_at_cap_untouched(): # explicit LIMIT exactly at the cap is allowed
+def test_leaves_limit_at_cap_untouched(): # explicit limit exactly at the cap is allowed
     sql = 'SELECT "Title" FROM "Album" LIMIT 10'
     assert enforce_row_limit(sql, max_rows=10) == sql
 
 
-def test_rejects_limit_above_cap(): # explicit LIMIT over the cap fails loudly, not clamped
+def test_rejects_limit_above_cap(): # explicit limt over the cap fails loudly
     sql = 'SELECT "Title" FROM "Album" LIMIT 5000'
     with pytest.raises(SQLValidationError, match="exceeds the maximum of 10 rows"):
         enforce_row_limit(sql, max_rows=10)
