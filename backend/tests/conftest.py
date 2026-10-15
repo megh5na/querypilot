@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.rate_limit import ask_limiter
 from app.main import app
 
 
@@ -22,6 +23,13 @@ def mock_generate_sql(): # replace llm call with a controllable mock — no real
 def mock_run_query(): # replace db execution with a controllable mock — no postgres needed
     with patch("app.api.routes.ask.run_query", new_callable=AsyncMock) as mock:
         yield mock
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter(): # limiter state is module-level, so without this one test's requests count against the next
+    ask_limiter.reset()
+    yield
+    ask_limiter.reset()
 
 
 @pytest.fixture(autouse=True)

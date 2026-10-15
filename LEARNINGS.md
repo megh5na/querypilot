@@ -46,7 +46,14 @@
 - added test_logging.py (JSONFormatter in isolation) and test_main.py (the middleware sets a header, different requests get different ids).
 
 ## day 9
-- found a real gap while reviewing day 8's logging: ask.py only caught `ValueError`, but anthropic's sdk errors (bad key, rate limit, timeout) don't subclass ValueError — they'd have crashed as raw unhandled 500s.
-- app/core/llm.py now has its own exception hierarchy — LLMError, LLMConfigError (our fault, not transient), LLMUnavailableError (anthropic's side is down, retryable) — and translates anthropic's sdk exceptions into these inside generate_sql, so ask.py never has to know anthropic's exception types exist.
-- ask.py maps them to distinct status codes: 500 for config errors (with a generic client-facing message — the real anthropic error only goes to the log), 503 for unavailable, 502 for everything else.
-- added test_llm.py — generate_sql's exception translation had zero coverage before (same gap test_executor.py fixed for run_query on day 7).
+- ask.py only caught `ValueError`, but anthropic's sdk errors don't subclass ValueError 
+- app/core/llm.py now has its own exception hierarchy 
+- ask.py maps them to distinct status codes
+- added test_llm.py - generate_sql's exception translation had zero coverage before
+
+## day 10
+- app/core/rate_limit.py: in-memory sliding window limiter (10 requests per 60s per client ip, tunable in settings), wired into /ask only via a fastapi dependency. over the limit -> 429 with a Retry-After header, and the request never reaches the llm or db.
+- rejected requests aren't recorded, so hammering while blocked doesn't extend the block. limiter takes an injectable clock, so tests move time by hand instead of sleeping.
+- the dependency is `async def` on purpose: it runs on the event loop and check() has no await, so no lock is needed. a plain `def` would run in a threadpool and need one.
+- gotcha: new log fields have to be added to _EXTRA_FIELDS in logging.py or they're silently dropped. also limiter state is module-level, so conftest.py resets it before every test.
+- shortcut to revisit at deployment: counters live in one process's memory, so multiple workers/replicas each keep their own count. needs redis by then.

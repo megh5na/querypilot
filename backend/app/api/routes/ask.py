@@ -1,9 +1,10 @@
 import logging
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 import asyncpg
+from app.core.rate_limit import rate_limit_ask
 from app.core.executor import run_query, SQLValidationError, ResultTooLargeError
 from app.db.introspect import get_schema_description
 from app.core.llm import generate_sql, LLMError, LLMConfigError, LLMUnavailableError
@@ -19,7 +20,7 @@ class AskResponse(BaseModel): # response to ask request
     sql: str
     rows: list[dict]
 
-@router.post("/ask", response_model=AskResponse)
+@router.post("/ask", response_model=AskResponse, dependencies=[Depends(rate_limit_ask)])
 async def ask(req: AskRequest) -> AskResponse:
     logger.info("ask received", extra={"question": req.question})
     schema_description = await get_schema_description() # get schema description
