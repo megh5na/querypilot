@@ -18,3 +18,12 @@ async def get_readonly_pool():
             server_settings={"statement_timeout": "5000"},  # 5s cap applied to every connection
         )
     return _ro_pool
+
+async def close_pools():
+    # called on shutdown, and by integration tests — a pool is bound to the event loop that created it
+    global _pool, _ro_pool
+    for pool in (_pool, _ro_pool):
+        if pool is not None:
+            await pool.close()
+    _pool = None
+    _ro_pool = None

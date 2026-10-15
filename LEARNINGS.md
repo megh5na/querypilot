@@ -57,3 +57,7 @@
 - the dependency is `async def` on purpose: it runs on the event loop and check() has no await, so no lock is needed. a plain `def` would run in a threadpool and need one.
 - gotcha: new log fields have to be added to _EXTRA_FIELDS in logging.py or they're silently dropped. also limiter state is module-level, so conftest.py resets it before every test.
 - shortcut to revisit at deployment: counters live in one process's memory, so multiple workers/replicas each keep their own count. needs redis by then.
+
+## day 11
+- integration tests against the real chinook db (tests/integration/, auto-skipped when postgres is down), llm still stubbed. they immediately found a real bug: the system prompt told the model names are PascalCase, but the db is snake_case, so every real query would have failed. every mocked test had the same wrong assumption.
+- pools are now closed on shutdown. asyncpg pools are bound to the loop that created them, so integration tests need fresh pools per test.

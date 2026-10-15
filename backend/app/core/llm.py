@@ -38,7 +38,7 @@ SQL_TOOL = {
 
 SYSTEM = (
     "You translate questions into PostgreSQL SELECT queries. "
-    'Table and column names are PascalCase and must be double-quoted, e.g. "Album"."Title". '
+    "Use table and column names exactly as they appear in the schema, including their case. "
     "Generate only read-only SELECT statements. Always call the submit_sql tool."
 )
 

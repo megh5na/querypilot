@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 
 from app.api.routes import schema, ask
 from app.core.logging import configure_logging, request_id_var
-from app.db.session import get_pool, get_readonly_pool
+from app.db.session import close_pools, get_pool, get_readonly_pool
 
 configure_logging()  # do this before anything else can log (e.g. pool startup)
 logger = logging.getLogger(__name__)
@@ -20,9 +20,7 @@ async def lifespan(app: FastAPI):
     await get_pool()
     await get_readonly_pool()
     yield
-    # shutdown: nothing to explicitly close for now
-    # asyncpg pools are closed by the OS on process exit
-    # explicit pool.close() can be added here later
+    await close_pools()  # shutdown: release connections cleanly instead of leaving it to process exit
 
 
 app = FastAPI(title="QueryPilot", lifespan=lifespan)
